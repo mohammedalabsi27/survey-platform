@@ -280,7 +280,7 @@
         </div>
     </div>
 
-    <!-- 🎯 أزرار التنقل -->
+    <!-- 🎯 أزرار التنقل والتصدير -->
     <div class="text-center pt-6">
         <div class="flex flex-wrap gap-4 justify-center">
             <a href="{{ route('surveys.builder', $survey->id) }}" 
@@ -288,66 +288,37 @@
                <i class="fas fa-arrow-right"></i>
                العودة للمصمم
             </a>
+            
             <a href="{{ route('surveys.fill', $survey->id) }}" 
                target="_blank"
                class="bg-green-500 text-white px-8 py-4 rounded-xl hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl flex items-center gap-3 font-semibold">
                <i class="fas fa-eye"></i>
                معاينة الاستبيان
             </a>
+            
             <button onclick="window.print()" 
                     class="bg-purple-500 text-white px-8 py-4 rounded-xl hover:bg-purple-600 transition-colors shadow-lg hover:shadow-xl flex items-center gap-3 font-semibold">
                <i class="fas fa-print"></i>
                طباعة التقرير
             </button>
+
+            <!-- 💡 زر تصدير النتائج (Excel/CSV) -->
+            <button wire:click="exportResponses" 
+                    wire:loading.attr="disabled"
+                    class="bg-emerald-600 text-white px-8 py-4 rounded-xl hover:bg-emerald-700 transition-colors shadow-lg hover:shadow-xl flex items-center gap-3 font-semibold disabled:opacity-50">
+               <span wire:loading.remove wire:target="exportResponses">
+                   <i class="fas fa-file-excel"></i>
+                   تصدير Excel
+               </span>
+               <span wire:loading wire:target="exportResponses">
+                   <i class="fas fa-spinner fa-spin"></i>
+                   جاري التصدير...
+               </span>
+            </button>
         </div>
     </div>
 
-<!-- 🎯 الستايل المخصص -->
-<style>
-.question-analytics-card {
-    transition: all 0.3s ease;
-}
-
-.question-analytics-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.analytics-content {
-    animation: slideUp 0.5s ease-in-out;
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* تخصيص شريط التمرير */
-.overflow-y-auto::-webkit-scrollbar {
-    width: 6px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 10px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-}
-</style>
-</div>
+</div> <!-- نهاية الحاوية الرئيسية -->
 
 <!-- 🎯 السكريبتات -->
 <script>
@@ -372,8 +343,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// تحديث البيانات تلقائياً
-setInterval(() => {
-    @this.$refresh();
-}, 30000); // تحديث كل 30 ثانية
+// 💡 قمنا بمسح كود setInterval القديم لأننا استبدلناه بـ wire:poll الخفيف والآمن!
 </script>

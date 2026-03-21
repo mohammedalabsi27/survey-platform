@@ -2,21 +2,32 @@
 
 namespace App\Livewire\Surveys;
 
-use Livewire\Component;
-use App\Models\Survey;
-use App\Models\Response;
 use App\Models\Answer;
+use App\Models\Response;
+use App\Models\Survey;
+use App\Traits\QuestionTypes;
+use Livewire\Component;
 
 class SurveyFiller extends Component
 {
+    use QuestionTypes;
+
     public $survey;
     public $answers = [];
     public $isSubmitted = false;
+    public $isClosed = false; //  متغير جديد لمعرفة هل الاستبيان مغلق؟
+
 
     public function mount($survey)
     {
         $this->survey = $survey;
         
+        // التحقق من حالة الاستبيان قبل كل شيء
+        if ($this->survey->status !== 'published') {
+            $this->isClosed = true;
+            return; // نوقف تنفيذ باقي الكود ولا نحمل الأسئلة
+        }
+
         // نجهز مصفوفة الإجابات الفارغة
         foreach ($this->survey->questions as $question) {
             $this->answers[$question->id] = $this->getDefaultAnswer($question->type);
@@ -38,18 +49,28 @@ class SurveyFiller extends Component
     // دالة إرسال الاستبيان
     public function submitSurvey()
     {
-        // نتحقق من الإجابات المطلوبة
+        if ($this->survey->status !== 'published') {
+            session()->flash('error', 'عذراً، هذا الاستبيان مغلق حالياً ولا يستقبل ردوداً.');
+            return;
+        }
+        // بناء قواعد التحقق ديناميكياً
+        $rules = [];
+        $messages = [];
+        
         foreach ($this->survey->questions as $question) {
             if ($question->required) {
-                $answer = $this->answers[$question->id] ?? '';
-                
-                if (empty($answer) || (is_array($answer) && empty($answer))) {
-                    session()->flash('error', 'يرجى الإجابة على جميع الأسئلة المطلوبة');
-                    return;
+                if ($question->type == 'multiple_choice') {
+                    $rules["answers.{$question->id}"] = 'required|array|min:1';
+                } else {
+                    $rules["answers.{$question->id}"] = 'required';
                 }
+                $messages["answers.{$question->id}.required"] = 'هذا السؤال مطلوب للإجابة عليه.';
             }
         }
-        // dd($this->answers);
+
+        if (!empty($rules)) {
+            $this->validate($rules, $messages);
+        }
         // نحفظ الرد في قاعدة البيانات
         $response = Response::create([
             'survey_id' => $this->survey->id,
@@ -60,11 +81,32 @@ class SurveyFiller extends Component
         // نحفظ كل الإجابات
         foreach ($this->answers as $questionId => $answerValue) {
             if (!empty($answerValue) && !(is_array($answerValue) && empty($answerValue))) {
-                Answer::create([
-                    'response_id' => $response->id,
-                    'question_id' => $questionId,
-                    'answer_text' => is_array($answerValue) ? json_encode($answerValue) : $answerValue
-                ]);
+                $question = $this->survey->questions->find($questionId);
+                
+                if (is_array($answerValue) && $question->type == 'multiple_choice') {
+                    foreach ($answerValue as $ansItem) {
+                        $option = $question->options->where('option_text', $ansItem)->first();
+                        Answer::create([
+                            'response_id' => $response->id,
+                            'question_id' => $questionId,
+                            'answer_text' => $ansItem,
+                            'option_id' => $option ? $option->id : null
+                        ]);
+                    }
+                } else {
+                    $optionId = null;
+                    if ($question->type == 'choice') {
+                        $option = $question->options->where('option_text', $answerValue)->first();
+                        $optionId = $option ? $option->id : null;
+                    }
+
+                    Answer::create([
+                        'response_id' => $response->id,
+                        'question_id' => $questionId,
+                        'answer_text' => $answerValue,
+                        'option_id' => $optionId
+                    ]);
+                }
             }
         }
 
@@ -72,19 +114,19 @@ class SurveyFiller extends Component
         session()->flash('success', 'شكراً لك! تم إرسال إجاباتك بنجاح 🎉');
     }
 
-    public function getQuestionTypeArabic($type)
-    {
-        $types = [
-            'text' => 'نص قصير',
-            'textarea' => 'نص طويل',
-            'choice' => 'اختيار وحيد',
-            'multiple_choice' => 'اختيار متعدد',
-            'yes_no' => 'نعم/لا',
-            'rating' => 'تقييم'
-        ];
+    // public function getQuestionTypeArabic($type)
+    // {
+    //     $types = [
+    //         'text' => 'نص قصير',
+    //         'textarea' => 'نص طويل',
+    //         'choice' => 'اختيار وحيد',
+    //         'multiple_choice' => 'اختيار متعدد',
+    //         'yes_no' => 'نعم/لا',
+    //         'rating' => 'تقييم'
+    //     ];
         
-        return $types[$type] ?? $type;
-    }
+    //     return $types[$type] ?? $type;
+    // }
 
     // ونضيف دالة لحساب الأسئلة المكتملة
     public function getCompletedQuestionsCount()

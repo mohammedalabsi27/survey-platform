@@ -3,6 +3,7 @@
 namespace App\Livewire\Surveys\Builder;
 
 use Livewire\Component;
+use Livewire\Attributes\On; 
 use App\Models\Survey;
 use App\Traits\QuestionTypes;
 
@@ -11,14 +12,7 @@ class QuestionList extends Component
     use QuestionTypes;
     
     public $survey;
-    public $editingQuestionId = null;
-    public $editedText = '';
-    
     public $questions;
-    
-    protected $listeners = [
-        'questionAdded' => 'refreshQuestions',
-    ];
     
     public function mount($survey)
     {
@@ -34,59 +28,50 @@ class QuestionList extends Component
             ->get();
     }
     
+    #[On('questionAdded')]
     public function refreshQuestions()
     {
         $this->loadQuestions();
-        $this->cancelEditing();     
     }
 
-    public function startEditing($questionId)
+    // 💡 هذه هي الدالة الجديدة للحفظ التلقائي
+    public function updateQuestionText($questionId, $newText)
     {
         $question = $this->survey->questions()->find($questionId);
+        
+        // نتحقق أن السؤال موجود وأن النص الجديد ليس فارغاً
+        if ($question && trim($newText) !== '') {
+            $question->update(['question_text' => $newText]);
+            $this->dispatch('questionUpdated'); // إظهار رسالة "تم الحفظ"
+            $this->loadQuestions(); // تحديث القائمة
+        }
+    }
+
+    // 💡 دالة تفعيل/إلغاء إلزامية السؤال
+    public function toggleRequired($questionId)
+    {
+        $question = $this->survey->questions()->find($questionId);
+        
         if ($question) {
-            $this->editingQuestionId = $questionId;
-            $this->editedText = $question->question_text;
-        }
-    }
-    
-    public function saveEditing()
-    {
-        if ($this->editingQuestionId && trim($this->editedText) !== '') {
-            $question = $this->survey->questions()->find($this->editingQuestionId);
-
-            if ($question) {
-                $question->update(['question_text' => $this->editedText]);
-
-                $this->dispatch('questionUpdated');
-            }
+            // عكس الحالة الحالية (True إلى False والعكس)
+            $question->update(['required' => !$question->required]);
             
-            $this->refreshQuestions();
+            // تحديث الواجهة
+            $this->loadQuestions();
+            
+            // إظهار رسالة نجاح صغيرة
+            $status = $question->required ? 'إجباري' : 'اختياري';
+            session()->flash('success', "تم جعل السؤال: {$status}");
         }
     }
-
-    public function cancelEditing()
-    {
-        $this->editingQuestionId = null;
-        $this->editedText = '';
-    }
-
     
     public function deleteQuestion($questionId)
     {
         $question = $this->survey->questions()->find($questionId);
-        
         if ($question) {            
             $question->delete();
-            
-            // إعادة ترتيب الأسئلة المتبقية
             $this->reorderQuestions();
-
             $this->loadQuestions();
-
-            if ($this->editingQuestionId == $questionId) {
-                $this->cancelEditing();
-            }
-
             $this->dispatch('questionDeleted');
         }
     }
@@ -99,6 +84,20 @@ class QuestionList extends Component
         }
     }
     
+    // 💡 دالة ترتيب الأسئلة (السحب والإفلات)
+    public function updateQuestionOrder($orderedIds)
+    {
+        // $orderedIds هي مصفوفة تحتوي على أرقام الأسئلة بالترتيب الجديد
+        foreach ($orderedIds as $index => $id) {
+            $this->survey->questions()->where('id', $id)->update(['order' => $index + 1]);
+        }
+        
+        $this->loadQuestions(); // تحديث القائمة لإظهار الأرقام الجديدة
+        
+        // إظهار رسالة نجاح صغيرة
+        session()->flash('success', 'تم حفظ ترتيب الأسئلة الجديد بنجاح!');
+    }
+
     public function render()
     {
         return view('surveys.builder.questions-list');

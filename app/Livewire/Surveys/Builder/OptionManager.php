@@ -3,15 +3,14 @@
 namespace App\Livewire\Surveys\Builder;
 
 use Livewire\Component;
+use Livewire\Attributes\On; // 👈 استدعاء الميزة
 use App\Models\Question;
 use App\Models\Option;
 
 class OptionManager extends Component
 {
     public $question;
-    public $options = [];
-    
-    protected $listeners = ['refreshOptions' => 'loadOptions'];
+    public $options =[];
     
     public function mount($question)
     {
@@ -19,11 +18,11 @@ class OptionManager extends Component
         $this->loadOptions();
     }
     
+    // 👇 تحديث الحدث
+    #[On('refreshOptions')]
     public function loadOptions()
     {
-        $this->options = $this->question->options()
-            // ->orderBy('order')
-            ->get();
+        $this->options = $this->question->options()->get();
     }
     
     public function addOption()
@@ -32,16 +31,13 @@ class OptionManager extends Component
             return;
         }
         
-        // $order = $this->options->count() + 1;
-        
         Option::create([
             'question_id' => $this->question->id,
             'option_text' => 'خيار جديد',
-            // 'order' => $order
         ]);
         
         $this->loadOptions();
-        $this->dispatch('optionUpdated')->to(\App\Livewire\Surveys\SurveyBuilder::class);
+        $this->dispatch('optionUpdated'); // 👈 إرسال الحدث بالطريقة الجديدة
     }
     
     public function removeOption($optionId)
@@ -49,8 +45,8 @@ class OptionManager extends Component
         $option = Option::find($optionId);
         if ($option) {
             $option->delete();
-            // $this->reorderOptions();
-            $this->dispatch('optionUpdated')->to(\App\Livewire\Surveys\SurveyBuilder::class);
+            $this->dispatch('optionUpdated');
+            $this->loadOptions(); // تحديث القائمة بعد الحذف
         }
     }
     
@@ -59,18 +55,9 @@ class OptionManager extends Component
         $option = Option::find($optionId);
         if ($option && trim($newText) !== '') {
             $option->update(['option_text' => $newText]);
-            $this->dispatch('optionUpdated')->to(\App\Livewire\Surveys\SurveyBuilder::class);
+            $this->dispatch('optionUpdated');
         }
     }
-    
-    // private function reorderOptions()
-    // {
-    //     $options = $this->question->options()->orderBy('order')->get();
-    //     foreach ($options as $index => $option) {
-    //         $option->update(['order' => $index + 1]);
-    //     }
-    //     $this->loadOptions();
-    // }
     
     public function render()
     {

@@ -32,8 +32,26 @@
     </div>
     @endif
 
+    <!-- 💡 إذا كان الاستبيان مغلقاً (مسودة أو تم إيقافه) -->
+    @if($isClosed)
+    <div class="text-center py-16 bg-white rounded-2xl shadow-lg border border-gray-200 animate-fade-in">
+        <div class="max-w-md mx-auto px-4">
+            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 text-4xl mx-auto mb-6">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-3">عذراً، الاستبيان مغلق</h2>
+            <p class="text-gray-600 text-base mb-8 leading-relaxed">
+                هذا الاستبيان لا يستقبل أي ردود في الوقت الحالي. ربما انتهت فترة التصويت أو قام المنشئ بإيقافه.
+            </p>
+            <a href="{{ url('/') }}" class="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-900 transition-colors shadow flex items-center justify-center gap-2 group w-full sm:w-auto mx-auto inline-flex">
+                <i class="fas fa-home group-hover:scale-110 transition-transform"></i>
+                العودة للصفحة الرئيسية
+            </a>
+        </div>
+    </div>
+
     <!-- بعد الإرسال الناجح -->
-    @if($isSubmitted)
+    @elseif($isSubmitted)
     <div class="text-center py-12 bg-white rounded-2xl shadow-lg border border-gray-200">
         <div class="max-w-md mx-auto">
             <div class="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-3xl mx-auto mb-4 animate-bounce">
@@ -90,7 +108,7 @@
                         <div class="flex items-center gap-2 text-xs text-gray-500">
                             <span class="bg-gray-100 px-2 py-0.5 rounded-lg">
                                 <i class="fas fa-tag ml-1"></i>
-                                {{ $this->getQuestionTypeArabic($question->type) }}
+                                {{ $this->getTypeArabic($question->type) }}
                             </span>
                             @if($question->required)
                             <span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-lg">

@@ -30,15 +30,47 @@
             </div>
             
             <div class="flex gap-3">
+                <!-- 💡 زر النشر / الإيقاف الجديد -->
+                <button wire:click="toggleStatus" 
+                        class="px-6 py-3 rounded-xl flex items-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold text-white
+                        {{ $survey->status === 'published' ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-blue-600 hover:bg-blue-700' }}">
+                    
+                    <!-- تغيير الأيقونة والنص بناءً على الحالة -->
+                    @if($survey->status === 'published')
+                        <i class="fas fa-pause-circle"></i>
+                        <span>إيقاف الاستبيان</span>
+                    @else
+                        <i class="fas fa-globe"></i>
+                        <span>نشر الاستبيان</span>
+                    @endif
+                </button>
+
+                <!-- 💡 زر نسخ الرابط الذكي (يظهر فقط إذا كان الاستبيان منشوراً) -->
+                @if($survey->status === 'published')
+                <button x-data="{ copied: false }"
+                        @click="navigator.clipboard.writeText('{{ route('surveys.fill', $survey->id) }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                        class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-3 rounded-xl flex items-center gap-2 transition-all duration-200 border border-indigo-200 shadow-sm"
+                        title="نسخ رابط المشاركة">
+                    
+                    <!-- تغيير الأيقونة عند النسخ -->
+                    <i class="fas" :class="copied ? 'fa-check text-green-500' : 'fa-link'"></i>
+                    
+                    <!-- تغيير النص عند النسخ -->
+                    <span x-text="copied ? 'تم النسخ!' : 'نسخ الرابط'" class="font-semibold text-sm"></span>
+                </button>
+                @endif
+
+                <!-- زر المعاينة -->
                 <a href="{{ route('surveys.fill', $survey->id) }}" 
-                   target="_blank"
-                   class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl flex items-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl group">
+                target="_blank"
+                class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl flex items-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl group">
                     <i class="fas fa-eye group-hover:scale-110 transition-transform"></i>
                     <span class="font-semibold">معاينة</span>
                 </a>
                 
+                <!-- زر التحليلات -->
                 <a href="{{ route('surveys.analytics', $survey->id) }}" 
-                   class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-xl flex items-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl group">
+                class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-xl flex items-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl group">
                     <i class="fas fa-chart-bar group-hover:scale-110 transition-transform"></i>
                     <span class="font-semibold">تحليلات</span>
                 </a>

@@ -34,10 +34,10 @@ class SurveyAnalytics extends Component
         ];
     }
 
-    //  دالة لتحليل إجابات الأسئلة الاختيارية (للـ choice فقط)
+    //  دالة لتحليل إجابات الأسئلة الاختيارية والاختيار المتعدد
     public function getChoiceStats($question)
     {
-        if ($question->type != 'choice') {
+        if (!in_array($question->type, ['choice', 'multiple_choice'])) {
             return null;
         }
         
@@ -45,10 +45,26 @@ class SurveyAnalytics extends Component
         $totalResponses = $this->survey->responses()->count();
         
         foreach ($question->options as $option) {
-            // عد الإجابات لسؤال اختيار وحيد فقط
-            $count = Answer::where('question_id', $question->id)
-                        ->where('answer_text', $option->option_text)
-                        ->count();
+            // نستخدم الايجابات المحملة مسبقاً (eager loaded) لعدم عمل استعلامات N+1
+            $count = $question->answers->filter(function($ans) use ($option, $question) {
+                // النظام الجديد باستخدام option_id
+                if ($ans->option_id == $option->id) {
+                    return true;
+                }
+                
+                // النظام القديم (للتوافق مع البيانات السابقة إن وجدت)
+                if (!$ans->option_id) {
+                    if ($question->type == 'multiple_choice') {
+                        $decoded = json_decode($ans->answer_text, true);
+                        return is_array($decoded) && in_array($option->option_text, $decoded);
+                    }
+                    if ($question->type == 'choice') {
+                        return $ans->answer_text === $option->option_text;
+                    }
+                }
+                
+                return false;
+            })->count();
             
             $percentage = $totalResponses > 0 ? round(($count / $totalResponses) * 100, 1) : 0;
             
@@ -62,49 +78,10 @@ class SurveyAnalytics extends Component
         return $stats;
     }
 
-    //  دالة خاصة لتحليل الـ multiple_choice
+    //  دالة خاصة لتحليل الـ multiple_choice تستخدم نفس المنطق الموحد
     public function getMultipleChoiceStats($question)
     {
-        if ($question->type != 'multiple_choice') {
-            return null;
-        }
-        
-        $stats = [];
-        $totalResponses = $this->survey->responses()->count();
-        
-        // نجمع كل الإجابات لهذا السؤال
-        $answers = Answer::where('question_id', $question->id)->get();
-        
-        foreach ($question->options as $option) {
-            $count = 0;
-            
-            foreach ($answers as $answer) {
-                // نحاول نقرأ الإجابة كـ JSON
-                $answerData = json_decode($answer->answer_text, true);
-                
-                if (is_array($answerData)) {
-                    // إذا كانت مصفوفة، نتحقق إذا الخيار موجود
-                    if (in_array($option->option_text, $answerData)) {
-                        $count++;
-                    }
-                } else {
-                    // إذا كانت نص عادي، نتحقق إذا الخيار موجود في النص
-                    if (str_contains($answer->answer_text, $option->option_text)) {
-                        $count++;
-                    }
-                }
-            }
-            
-            $percentage = $totalResponses > 0 ? round(($count / $totalResponses) * 100, 1) : 0;
-            
-            $stats[] = [
-                'option' => $option->option_text,
-                'count' => $count,
-                'percentage' => $percentage
-            ];
-        }
-        
-        return $stats;
+        return $this->getChoiceStats($question);
     }
         // دالة لتحليل سؤال نعم/لا
     public function getYesNoStats($question)
@@ -198,6 +175,63 @@ class SurveyAnalytics extends Component
         ];
         
         return $types[$type] ?? $type;
+    }
+
+    // 💡 دالة تصدير الردود إلى ملف Excel (CSV)
+    public function exportResponses()
+    {
+        $fileName = 'نتائج_استبيان_' . $this->survey->id . '_' . date('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () {
+            $file = fopen('php://output', 'w');
+            
+            // إضافة BOM لدعم اللغة العربية في Excel بدون ظهور رموز غريبة
+            fputs($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            // تجهيز عناوين الأعمدة (رقم المشاركة، التاريخ، ثم نصوص الأسئلة)
+            $columns = ['رقم المشاركة', 'تاريخ المشاركة'];
+            foreach ($this->survey->questions as $question) {
+                $columns[] = $question->question_text;
+            }
+            fputcsv($file, $columns);
+
+            // جلب الردود وكتابة الإجابات صفا بصف
+            foreach ($this->survey->responses as $response) {
+                $row =[
+                    $response->id,
+                    $response->created_at->format('Y-m-d H:i A')
+                ];
+
+                foreach ($this->survey->questions as $question) {
+                    // جلب كل الإجابات لهذا السؤال (لأن الاختيار المتعدد يحفظ كعدة صفوف)
+                    $answers = $response->answers->where('question_id', $question->id);
+                    
+                    if ($answers->count() > 0) {
+                        $answerTexts =[];
+                        foreach ($answers as $ans) {
+                            if ($ans->option_id) {
+                                // إذا كان خياراً (يحتوي على option_id)، نجلب نص الخيار
+                                $answerTexts[] = $ans->option->option_text ?? '';
+                            } else {
+                                // إذا كان نصاً 
+                                $answerTexts[] = $ans->answer_text;
+                            }
+                        }
+                        // دمج الإجابات (إذا كانت اختيار متعدد) بفاصلة
+                        $row[] = implode(' ، ', array_filter($answerTexts));
+                    } else {
+                        // إذا لم يقم المستخدم بالإجابة على هذا السؤال
+                        $row[] = 'لم يُجب'; 
+                    }
+                }
+                // كتابة الصف في ملف الـ CSV
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        }, $fileName,[
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
     }
 
 

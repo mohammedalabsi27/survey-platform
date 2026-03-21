@@ -74,7 +74,7 @@
                         
                         <!-- عداد الأحرف -->
                         <div class="flex justify-between items-center mt-2">
-                            <p class="text-gray-500 text-xs">سي帮助 المشاركين على فهم هدف الاستبيان</p>
+                            <p class="text-gray-500 text-xs">المشاركين على فهم هدف الاستبيان</p>
                             <span class="text-gray-400 text-xs">{{ strlen($description ?? '') }}/500</span>
                         </div>
                     </div>
