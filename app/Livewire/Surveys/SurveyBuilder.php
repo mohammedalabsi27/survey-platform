@@ -17,6 +17,12 @@ class SurveyBuilder extends Component
     }
     
     // 👇 استبدلنا مصفوفة $listeners القديمة بهذه الطريقة النظيفة
+    // #[On('surveyUpdated')]
+    // public function handleSurveyUpdated()
+    // {
+    //     $this->survey->refresh();
+    //     session()->flash('success', 'تم تعديل الاستبيان بنجاح!');
+    // }
     #[On('questionAdded')]
     public function handleQuestionAdded($questionId)
     {
@@ -62,6 +68,24 @@ class SurveyBuilder extends Component
             : 'تم إيقاف الاستبيان وإعادته كمسودة.';
             
         session()->flash('success', $message);
+    }
+
+    // 💡 دالة تحميل كود QR كصورة مباشرة لجهاز المستخدم
+    public function downloadQRCode()
+    {
+        // تجهيز الرابط
+        $url = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=' . urlencode(route('surveys.fill', $this->survey->id));
+        
+        // جلب الصورة باستخدام Laravel HTTP Client
+        $image = \Illuminate\Support\Facades\Http::get($url)->body();
+        
+        // اسم الملف الذي سينزل للمستخدم
+        $fileName = 'QR_Survey_' . $this->survey->id . '.png';
+
+        // إجبار المتصفح على تحميلها كملف
+        return response()->streamDownload(function () use ($image) {
+            echo $image;
+        }, $fileName);
     }
     
     public function render()

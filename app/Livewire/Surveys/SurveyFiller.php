@@ -4,8 +4,8 @@ namespace App\Livewire\Surveys;
 
 use App\Models\Answer;
 use App\Models\Response;
-use App\Models\Survey;
 use App\Traits\QuestionTypes;
+use Illuminate\Support\Facades\Cookie; // 💡 أضف هذا السطر المهم جداً
 use Livewire\Component;
 
 class SurveyFiller extends Component
@@ -15,7 +15,10 @@ class SurveyFiller extends Component
     public $survey;
     public $answers = [];
     public $isSubmitted = false;
-    public $isClosed = false; //  متغير جديد لمعرفة هل الاستبيان مغلق؟
+    public $isClosed = false;
+    public $closedMessage = ''; // 💡 رسالة الإغلاق الديناميكية
+    public $closedIcon = ''; //  متغير جديد لمعرفة هل الاستبيان مغلق؟
+    public $alreadySubmitted = false; // 💡 متغير جديد
 
 
     public function mount($survey)
@@ -25,9 +28,31 @@ class SurveyFiller extends Component
         // التحقق من حالة الاستبيان قبل كل شيء
         if ($this->survey->status !== 'published') {
             $this->isClosed = true;
-            return; // نوقف تنفيذ باقي الكود ولا نحمل الأسئلة
+            $this->closedIcon = 'fa-lock';
+            $this->closedMessage = 'هذا الاستبيان لا يستقبل أي ردود في الوقت الحالي. ربما قام المنشئ بإيقافه.';
+            return;
         }
 
+        // 2. هل حاول الدخول قبل موعد البداية؟
+        if ($this->survey->start_date && now()->lt($this->survey->start_date)) {
+            $this->isClosed = true;
+            $this->closedIcon = 'fa-calendar-alt';
+            $this->closedMessage = 'هذا الاستبيان لم يبدأ بعد. سيبدأ استقبال الردود في: ' . \Carbon\Carbon::parse($this->survey->start_date)->format('Y-m-d h:i A');
+            return;
+        }
+
+        // 3. هل انتهى وقت الاستبيان؟
+        if ($this->survey->end_date && now()->gt($this->survey->end_date)) {
+            $this->isClosed = true;
+            $this->closedIcon = 'fa-hourglass-end';
+            $this->closedMessage = 'عذراً، لقد انتهت فترة استقبال الردود لهذا الاستبيان.';
+            return;
+        }
+
+        if (Cookie::has('survey_submitted_' . $this->survey->id)) {
+            $this->alreadySubmitted = true;
+            return; // نوقف تحميل الأسئلة
+        }
         // نجهز مصفوفة الإجابات الفارغة
         foreach ($this->survey->questions as $question) {
             $this->answers[$question->id] = $this->getDefaultAnswer($question->type);
@@ -71,6 +96,8 @@ class SurveyFiller extends Component
         if (!empty($rules)) {
             $this->validate($rules, $messages);
         }
+
+        
         // نحفظ الرد في قاعدة البيانات
         $response = Response::create([
             'survey_id' => $this->survey->id,
@@ -109,24 +136,12 @@ class SurveyFiller extends Component
                 }
             }
         }
+        Cookie::queue('survey_submitted_' . $this->survey->id, true, 60 * 24 * 365);
 
         $this->isSubmitted = true;
         session()->flash('success', 'شكراً لك! تم إرسال إجاباتك بنجاح 🎉');
     }
 
-    // public function getQuestionTypeArabic($type)
-    // {
-    //     $types = [
-    //         'text' => 'نص قصير',
-    //         'textarea' => 'نص طويل',
-    //         'choice' => 'اختيار وحيد',
-    //         'multiple_choice' => 'اختيار متعدد',
-    //         'yes_no' => 'نعم/لا',
-    //         'rating' => 'تقييم'
-    //     ];
-        
-    //     return $types[$type] ?? $type;
-    // }
 
     // ونضيف دالة لحساب الأسئلة المكتملة
     public function getCompletedQuestionsCount()

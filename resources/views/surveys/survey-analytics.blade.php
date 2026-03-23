@@ -133,16 +133,15 @@
                     <!-- 🎯 محتوى التحليل حسب نوع السؤال -->
                     <div class="analytics-content">
                         @if(in_array($question->type, ['text', 'textarea']))
-                        <!-- 📝 تحليل الأسئلة النصية -->
+                        <!-- 📝 تحليل الأسئلة النصية (كما هو) -->
                         <div class="space-y-4">
                             <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <i class="fas fa-comment-dots text-blue-500"></i>
-                                الإجابات النصية
+                                <i class="fas fa-comment-dots text-blue-500"></i> الإجابات النصية
                             </h4>
                             @php $textAnswers = $this->getTextAnswers($question); @endphp
                             
                             @if($textAnswers && $textAnswers->count() > 0)
-                            <div class="space-y-3 max-h-60 overflow-y-auto">
+                            <div class="space-y-3 max-h-60 overflow-y-auto pr-2">
                                 @foreach($textAnswers as $answer)
                                 <div class="p-4 border border-gray-200 rounded-xl bg-gray-50 hover:bg-white transition-colors">
                                     <p class="text-gray-700 leading-relaxed">{{ $answer->answer_text }}</p>
@@ -158,120 +157,95 @@
                             @endif
                         </div>
 
-                        @elseif($question->type == 'choice')
-                        <!-- 🔘 تحليل اختيار وحيد -->
-                        @php $choiceStats = $this->getChoiceStats($question); @endphp
-                        @if($choiceStats)
+                        @elseif($question->type == 'choice' || $question->type == 'multiple_choice')
+                        <!-- 🔘☑️ تحليل الاختيارات (دائرة تفاعلية) -->
+                        @php 
+                            $stats = $question->type == 'choice' ? $this->getChoiceStats($question) : $this->getMultipleChoiceStats($question); 
+                        @endphp
+                        @if($stats && count($stats) > 0)
                         <div class="space-y-4">
                             <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <i class="fas fa-chart-pie text-yellow-500"></i>
-                                توزيع الإجابات
+                                <i class="fas fa-chart-pie text-blue-500"></i> توزيع الإجابات
                             </h4>
-                            <div class="space-y-3">
-                                @foreach($choiceStats as $stat)
-                                <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-xl border border-yellow-200">
-                                    <span class="font-medium text-gray-800">{{ $stat['option'] }}</span>
-                                    <div class="flex items-center gap-4">
-                                        <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg text-sm font-semibold">
-                                            {{ $stat['count'] }} تصويت
-                                        </span>
-                                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-lg text-sm font-semibold">
-                                            {{ $stat['percentage'] }}%
-                                        </span>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </div>
-                        </div>
-                        @endif
-
-                        @elseif($question->type == 'multiple_choice')
-                        <!-- ☑️ تحليل اختيار متعدد -->
-                        @php $choiceStats = $this->getMultipleChoiceStats($question); @endphp
-                        @if($choiceStats)
-                        <div class="space-y-4">
-                            <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <i class="fas fa-chart-bar text-purple-500"></i>
-                                توزيع الاختيارات
-                            </h4>
-                            <div class="space-y-3">
-                                @foreach($choiceStats as $stat)
-                                <div class="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200">
-                                    <span class="font-medium text-gray-800">{{ $stat['option'] }}</span>
-                                    <div class="flex items-center gap-4">
-                                        <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-lg text-sm font-semibold">
-                                            {{ $stat['count'] }} اختيار
-                                        </span>
-                                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-lg text-sm font-semibold">
-                                            {{ $stat['percentage'] }}%
-                                        </span>
-                                    </div>
-                                </div>
-                                @endforeach
+                            <!-- 💡 الحل هنا: استخدمنا علامة التنصيص المفردة ' لـ x-data -->
+                            <div wire:ignore class="flex justify-center" x-data='{
+                                init() {
+                                    let options = {
+                                        chart: { type: "donut", height: 320, fontFamily: "Tajawal, sans-serif" },
+                                        series: {!! json_encode(array_column($stats, "count"), JSON_NUMERIC_CHECK) !!},
+                                        labels: {!! json_encode(array_column($stats, "option"), JSON_UNESCAPED_UNICODE) !!},
+                                        colors:["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"],
+                                        dataLabels: { enabled: true },
+                                        legend: { position: "bottom" }
+                                    };
+                                    new ApexCharts(this.$refs.myChart, options).render();
+                                }
+                            }'>
+                                <div x-ref="myChart"></div>
                             </div>
                         </div>
                         @endif
 
                         @elseif($question->type == 'yes_no')
-                        <!-- 👍👎 تحليل نعم/لا -->
+                        <!-- 👍👎 تحليل نعم/لا (دائرة تفاعلية) -->
                         @php $yesNoStats = $this->getYesNoStats($question); @endphp
                         @if($yesNoStats)
                         <div class="space-y-4">
                             <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                <i class="fas fa-balance-scale text-green-500"></i>
-                                نتائج نعم/لا
+                                <i class="fas fa-balance-scale text-green-500"></i> نتائج نعم/لا
                             </h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div class="bg-green-50 p-6 rounded-2xl text-center border-2 border-green-200">
-                                    <div class="text-3xl font-bold text-green-600 mb-2">👍</div>
-                                    <div class="text-2xl font-bold text-green-600">{{ $yesNoStats['نعم']['count'] }}</div>
-                                    <div class="text-green-800 font-semibold">نعم</div>
-                                    <div class="text-green-600 text-sm">{{ $yesNoStats['نعم']['percentage'] }}%</div>
-                                </div>
-                                <div class="bg-red-50 p-6 rounded-2xl text-center border-2 border-red-200">
-                                    <div class="text-3xl font-bold text-red-600 mb-2">👎</div>
-                                    <div class="text-2xl font-bold text-red-600">{{ $yesNoStats['لا']['count'] }}</div>
-                                    <div class="text-red-800 font-semibold">لا</div>
-                                    <div class="text-red-600 text-sm">{{ $yesNoStats['لا']['percentage'] }}%</div>
-                                </div>
-                            </div>
-                            <div class="text-center text-gray-600 text-sm bg-gray-100 py-3 rounded-xl">
-                                إجمالي التصويتات: {{ $yesNoStats['نعم']['count'] + $yesNoStats['لا']['count'] }} من {{ $yesNoStats['نعم']['total_responses'] }} مشارك
+                            <div wire:ignore class="flex justify-center" x-data='{
+                                init() {
+                                    let options = {
+                                        chart: { type: "pie", height: 300, fontFamily: "Tajawal, sans-serif" },
+                                        series: [{!! $yesNoStats["نعم"]["count"] !!}, {!! $yesNoStats["لا"]["count"] !!}],
+                                        labels: ["نعم 👍", "لا 👎"],
+                                        colors:["#10b981", "#ef4444"],
+                                        dataLabels: { enabled: true, style: { fontSize: "16px" } },
+                                        legend: { position: "bottom", fontSize: "15px" }
+                                    };
+                                    new ApexCharts(this.$refs.myChart, options).render();
+                                }
+                            }'>
+                                <div x-ref="myChart"></div>
                             </div>
                         </div>
                         @endif
 
                         @elseif($question->type == 'rating')
-                        <!-- ⭐ تحليل التقييم -->
+                        <!-- ⭐ تحليل التقييم (أعمدة تفاعلية) -->
                         @php $ratingStats = $this->getRatingStats($question); @endphp
                         @if($ratingStats && $ratingStats['total_votes'] > 0)
                         <div class="space-y-4">
-                            <div class="text-center mb-6">
-                                <div class="text-3xl font-bold text-yellow-600">{{ $ratingStats['average'] }}/5</div>
-                                <div class="text-yellow-700 font-semibold">متوسط التقييم</div>
-                                <div class="text-gray-600 text-sm">من {{ $ratingStats['total_votes'] }} تقييم</div>
+                            <div class="text-center mb-2">
+                                <div class="text-3xl font-bold text-yellow-600">{{ $ratingStats['average'] }} / 5</div>
+                                <div class="text-gray-500 text-sm">من {{ $ratingStats['total_votes'] }} تقييم</div>
                             </div>
-                            
-                            <div class="space-y-3">
-                                @foreach([5,4,3,2,1] as $star)
-                                <div class="flex items-center gap-4">
-                                    <div class="flex items-center gap-2 w-16">
-                                        <span class="text-yellow-500">⭐</span>
-                                        <span class="font-semibold text-gray-700">{{ $star }}</span>
-                                    </div>
-                                    <div class="flex-1 bg-gray-200 rounded-full h-3">
-                                        <div class="bg-yellow-500 h-3 rounded-full transition-all duration-1000" 
-                                             style="width: {{ $ratingStats['ratings'][$star]['percentage'] }}%"></div>
-                                    </div>
-                                    <div class="w-20 text-right text-sm text-gray-600">
-                                        {{ $ratingStats['ratings'][$star]['count'] }} 
-                                        <span class="text-gray-400">({{ $ratingStats['ratings'][$star]['percentage'] }}%)</span>
-                                    </div>
-                                </div>
-                                @endforeach
+                            <div wire:ignore class="w-full" x-data='{
+                                init() {
+                                    let options = {
+                                        chart: { type: "bar", height: 280, fontFamily: "Tajawal, sans-serif", toolbar: { show: false } },
+                                        series:[{ name: "عدد التقييمات", data:[
+                                            {!! $ratingStats["ratings"][1]["count"] !!},
+                                            {!! $ratingStats["ratings"][2]["count"] !!},
+                                            {!! $ratingStats["ratings"][3]["count"] !!},
+                                            {!! $ratingStats["ratings"][4]["count"] !!},
+                                            {!! $ratingStats["ratings"][5]["count"] !!}
+                                        ] }],
+                                        xaxis: { categories:["نجمة 1", "نجمتان 2", "3 نجوم", "4 نجوم", "5 نجوم"] },
+                                        colors: ["#f59e0b"],
+                                        plotOptions: { bar: { borderRadius: 4, distributed: true } },
+                                        dataLabels: { enabled: true },
+                                        legend: { show: false }
+                                    };
+                                    new ApexCharts(this.$refs.myChart, options).render();
+                                }
+                            }'>
+                                <div x-ref="myChart"></div>
                             </div>
                         </div>
                         @endif
+
                         @endif
                     </div>
                 </div>

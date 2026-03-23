@@ -17,6 +17,10 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->enum('status', ['draft', 'published', 'closed'])->default('draft');
+            $table->timestamp('start_date')->nullable();
+            $table->timestamp('end_date')->nullable();
+            $table->string('theme_color')->default('blue'); // اللون الافتراضي أزرق
+            $table->text('thank_you_message')->nullable();
             $table->timestamps();
         });
     }

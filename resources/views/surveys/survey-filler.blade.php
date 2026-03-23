@@ -32,51 +32,66 @@
     </div>
     @endif
 
-    <!-- 💡 إذا كان الاستبيان مغلقاً (مسودة أو تم إيقافه) -->
+    <!-- 1️⃣ إذا كان الاستبيان مغلقاً (يدوياً (مسودة) أو بسبب الوقت) -->
     @if($isClosed)
     <div class="text-center py-16 bg-white rounded-2xl shadow-lg border border-gray-200 animate-fade-in">
         <div class="max-w-md mx-auto px-4">
-            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 text-4xl mx-auto mb-6">
-                <i class="fas fa-lock"></i>
+            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-4xl mx-auto mb-6">
+                <!-- 💡 عرض الأيقونة الديناميكية -->
+                <i class="fas {{ $closedIcon }}"></i>
             </div>
             <h2 class="text-2xl font-bold text-gray-800 mb-3">عذراً، الاستبيان مغلق</h2>
-            <p class="text-gray-600 text-base mb-8 leading-relaxed">
-                هذا الاستبيان لا يستقبل أي ردود في الوقت الحالي. ربما انتهت فترة التصويت أو قام المنشئ بإيقافه.
+            <!-- 💡 عرض الرسالة الديناميكية -->
+            <p class="text-gray-600 text-base mb-8 leading-relaxed font-medium">
+                {{ $closedMessage }}
             </p>
-            <a href="{{ url('/') }}" class="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-900 transition-colors shadow flex items-center justify-center gap-2 group w-full sm:w-auto mx-auto inline-flex">
-                <i class="fas fa-home group-hover:scale-110 transition-transform"></i>
-                العودة للصفحة الرئيسية
+            <a href="{{ url('/') }}" class="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-900 transition-colors shadow flex items-center justify-center gap-2 w-full sm:w-auto mx-auto inline-flex">
+                <i class="fas fa-home"></i> العودة للصفحة الرئيسية
             </a>
         </div>
     </div>
 
-    <!-- بعد الإرسال الناجح -->
+    <!-- 2️⃣ 💡 إذا كان المستخدم قد شارك مسبقاً -->
+    @elseif($alreadySubmitted)
+    <div class="text-center py-16 bg-white rounded-2xl shadow-lg border border-gray-200 animate-fade-in">
+        <div class="max-w-md mx-auto px-4">
+            <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-{{ $survey->theme_color ?? 'blue' }}-500 text-4xl mx-auto mb-6">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-3">لقد قمت بالمشاركة مسبقاً!</h2>
+            <p class="text-gray-600 text-base mb-8 leading-relaxed">
+                شكراً لاهتمامك، ولكن نظامنا يوضح أنك قمت بتعبئة هذا الاستبيان بالفعل. للحفاظ على دقة النتائج، لا يمكن إرسال أكثر من رد واحد.
+            </p>
+            <a href="{{ url('/') }}" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow flex items-center justify-center gap-2 w-full sm:w-auto mx-auto inline-flex">
+                <i class="fas fa-home"></i> العودة للرئيسية
+            </a>
+        </div>
+    </div>
+
+    <!-- 3️⃣ بعد الإرسال الناجح -->
     @elseif($isSubmitted)
-    <div class="text-center py-12 bg-white rounded-2xl shadow-lg border border-gray-200">
-        <div class="max-w-md mx-auto">
+    <div class="text-center py-12 bg-white rounded-2xl shadow-lg border border-gray-200 animate-fade-in">
+        <div class="max-w-md mx-auto px-4">
             <div class="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white text-3xl mx-auto mb-4 animate-bounce">
                 <i class="fas fa-check"></i>
             </div>
             <h2 class="text-2xl font-bold text-gray-800 mb-3">شكراً لك على المشاركة! 🎉</h2>
             <p class="text-gray-600 text-base mb-6 leading-relaxed">
-                إجاباتك تم حفظها بنجاح وسيتم تحليلها قريباً.
+                {{ $survey->thank_you_message ?? 'إجاباتك تم حفظها بنجاح وسيتم تحليلها قريباً.' }}
                 <br>
                 <span class="text-green-600 font-semibold">مساهمتك تساعد في تحسين الخدمات</span>
             </p>
-            <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                <a href="{{ url('/') }}" 
-                   class="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow flex items-center justify-center gap-2 group text-sm">
+            <div class="flex justify-center">
+                <a href="{{ url('/') }}" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow flex items-center justify-center gap-2 group text-sm">
                     <i class="fas fa-home group-hover:scale-110 transition-transform"></i>
                     العودة للرئيسية
                 </a>
-                <button onclick="window.location.reload()" 
-                        class="border border-blue-600 text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 group text-sm">
-                    <i class="fas fa-redo group-hover:scale-110 transition-transform"></i>
-                    تعبئة الاستبيان مرة أخرى
-                </button>
+                <!-- 💡 تم حذف زر (تعبئة الاستبيان مرة أخرى) لأنه لم يعد مسموحاً -->
             </div>
         </div>
     </div>
+
+    <!-- 4️⃣ عرض نموذج الاستبيان إذا كانت كل الشروط السابقة غير متحققة -->
     @else
     <!-- 🎯 نموذج الاستبيان -->
     <form wire:submit="submitSurvey" class="space-y-4">
@@ -91,7 +106,7 @@
             <div class="p-6 border-b border-gray-100">
                 <div class="flex items-start gap-3">
                     <!-- رقم السؤال -->
-                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+                    <div class="w-10 h-10 bg-gradient-to-br from-{{ $survey->theme_color ?? 'blue' }}-500 to-{{ $survey->theme_color ?? 'blue' }}-600 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0">
                         {{ $index + 1 }}
                     </div>
                     
@@ -127,33 +142,33 @@
                 <!-- 📝 نص قصير -->
                 <input type="text" 
                        wire:model="answers.{{ $question->id }}"
-                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 placeholder-gray-400 text-base"
+                       class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-{{ $survey->theme_color ?? 'blue' }}-500 focus:border-{{ $survey->theme_color ?? 'blue' }}-500 transition-all duration-200 bg-gray-50 placeholder-gray-400 text-base"
                        placeholder="اكتب إجابتك هنا..."
-                       x-bind:class="{ 'border-blue-500 bg-blue-50': isFocused }">
+                       x-bind:class="{ 'border-{{ $survey->theme_color ?? 'blue' }}-500 bg-blue-50': isFocused }">
 
                 @elseif($question->type == 'textarea')
                 <!-- 📝 نص طويل -->
                 <textarea rows="4"
                           wire:model="answers.{{ $question->id }}"
-                          class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 placeholder-gray-400 resize-none text-base"
+                          class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-{{ $survey->theme_color ?? 'blue' }}-500 focus:border-{{ $survey->theme_color ?? 'blue' }}-500 transition-all duration-200 bg-gray-50 placeholder-gray-400 resize-none text-base"
                           placeholder="اكتب إجابتك المفصلة هنا..."
-                          x-bind:class="{ 'border-blue-500 bg-blue-50': isFocused }"></textarea>
+                          x-bind:class="{ 'border-{{ $survey->theme_color ?? 'blue' }}-500 bg-blue-50': isFocused }"></textarea>
 
                 @elseif($question->type == 'choice')
                 <!-- 🔘 اختيار وحيد -->
                 <div class="space-y-3">
                     @foreach($question->options as $option)
                     <label class="flex items-center p-4 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all duration-200 group/choice"
-                           x-bind:class="{ 'border-blue-500 bg-blue-50': $wire.answers[{{ $question->id }}] === '{{ $option->option_text }}' }">
+                           x-bind:class="{ 'border-{{ $survey->theme_color ?? 'blue' }}-500 bg-blue-50': $wire.answers[{{ $question->id }}] === '{{ $option->option_text }}' }">
                         <input type="radio" 
                                wire:model="answers.{{ $question->id }}"
                                value="{{ $option->option_text }}"
-                               class="text-blue-600 focus:ring-blue-500 scale-110 ml-3">
+                               class="text-blue-600 focus:ring-{{ $survey->theme_color ?? 'blue' }}-500 scale-110 ml-3">
                         <span class="text-gray-700 text-base font-medium flex-1 group-hover/choice:text-blue-700 transition-colors">
                             {{ $option->option_text }}
                         </span>
                         <div class="w-6 h-6 border-2 border-gray-300 rounded-full flex items-center justify-center group-hover/choice:border-blue-400 transition-colors"
-                             x-bind:class="{ 'border-blue-500 bg-blue-500': $wire.answers[{{ $question->id }}] === '{{ $option->option_text }}' }">
+                             x-bind:class="{ 'border-{{ $survey->theme_color ?? 'blue' }}-500 bg-{{ $survey->theme_color ?? 'blue' }}-500': $wire.answers[{{ $question->id }}] === '{{ $option->option_text }}' }">
                             <i class="fas fa-check text-white text-xs" 
                                x-show="$wire.answers[{{ $question->id }}] === '{{ $option->option_text }}'"></i>
                         </div>
@@ -252,7 +267,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 text-center sticky bottom-4">
             <div class="max-w-2xl mx-auto">
                 <button type="submit"
-                        class="bg-gradient-to-r from-green-500 to-green-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow hover:shadow-lg w-full flex items-center justify-center gap-2 group"
+                        class="bg-gradient-to-r from-{{ $survey->theme_color ?? 'blue' }}-500 to-{{ $survey->theme_color ?? 'blue' }}-600 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 shadow hover:shadow-lg w-full flex items-center justify-center gap-2 group"
                         wire:loading.attr="disabled"
                         wire:loading.class="opacity-50 cursor-not-allowed">
                     <span wire:loading.remove wire:target="submitSurvey">

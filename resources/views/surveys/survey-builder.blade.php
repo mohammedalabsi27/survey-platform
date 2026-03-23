@@ -58,6 +58,12 @@
                     <!-- تغيير النص عند النسخ -->
                     <span x-text="copied ? 'تم النسخ!' : 'نسخ الرابط'" class="font-semibold text-sm"></span>
                 </button>
+                <button @click="$dispatch('open-qr-modal')"
+                        class="bg-white hover:bg-gray-50 text-gray-700 px-4 py-3 rounded-xl flex items-center gap-2 transition-all duration-200 border border-gray-200 shadow-sm"
+                        title="عرض كود QR للطباعة">
+                    <i class="fas fa-qrcode text-lg"></i>
+                    <span class="font-semibold text-sm hidden sm:inline">كود QR</span>
+                </button>
                 @endif
 
                 <!-- زر المعاينة -->
@@ -88,6 +94,18 @@
     </div>
     @endif
 
+    <div class="flex gap-4 mb-6 border-b border-gray-200 pb-px">
+        <button wire:click="changeTab('questions')" 
+                class="pb-3 px-2 font-semibold text-lg transition-colors border-b-2 {{ $activeTab == 'questions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+            <i class="fas fa-list-ul ml-2"></i> الأسئلة
+        </button>
+        
+        <button wire:click="changeTab('settings')" 
+                class="pb-3 px-2 font-semibold text-lg transition-colors border-b-2 {{ $activeTab == 'settings' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700' }}">
+            <i class="fas fa-cog ml-2"></i> الإعدادات
+        </button>
+    </div>
+    
     <!-- 🎯 المحتوى الرئيسي -->
     @if($activeTab == 'questions')
     <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -101,9 +119,67 @@
             <livewire:surveys.builder.question-list :survey="$survey" />
         </div>
     </div>
-    @else
-    <div class="bg-white rounded-2xl p-6">
-        <p class="text-gray-500">سيظهر محتوى التبويبات الأخرى هنا</p>
-    </div>
+    @elseif($activeTab == 'settings')
+        <livewire:surveys.builder.survey-settings :survey="$survey" />
     @endif
+    
+    <!-- 🎯 نافذة كود QR (Modal) -->
+    <div x-data="{ show: false }"
+        x-show="show"
+        @open-qr-modal.window="show = true"
+        style="display: none;"
+        class="fixed inset-0 z-50 flex items-center justify-center">
+        
+        <!-- 💡 خلفية داكنة مع تأثير Blur -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+            @click="show = false" 
+            x-transition.opacity></div>
+        
+        <!-- 💡 صندوق الـ Modal -->
+        <div class="relative bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center transform transition-all"
+            x-transition:enter="ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-8 scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            x-transition:leave="ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+            x-transition:leave-end="opacity-0 translate-y-8 scale-95">
+            
+            <!-- زر الإغلاق -->
+            <button @click="show = false" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <div class="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-800 text-3xl mx-auto mb-4 shadow-inner">
+                <i class="fas fa-qrcode"></i>
+            </div>
+            
+            <h3 class="text-xl font-bold text-gray-800 mb-2">كود المشاركة السريع</h3>
+            <p class="text-gray-500 text-sm mb-6">امسح الكود بكاميرا الجوال للوصول المباشر إلى الاستبيان</p>
+            
+            <!-- 💡 صورة الـ QR من API موثوق -->
+            <div class="bg-white p-4 rounded-2xl border-2 border-dashed border-gray-200 inline-block mb-6 shadow-sm hover:shadow-md transition-shadow">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode(route('surveys.fill', $survey->id)) }}" 
+                    alt="QR Code" class="w-48 h-48 mx-auto"
+                    title="امسح!">
+            </div>
+            
+            <!-- 💡 زر التحميل المباشر كصورة -->
+            <button wire:click="downloadQRCode" 
+                    wire:loading.attr="disabled"
+                    class="w-full bg-gray-800 hover:bg-gray-900 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl group disabled:opacity-70">
+                
+                <!-- الحالة الطبيعية للزر -->
+                <span wire:loading.remove wire:target="downloadQRCode" class="flex items-center gap-2">
+                    <i class="fas fa-download group-hover:-translate-y-1 transition-transform"></i>
+                    تحميل الكود كصورة (PNG)
+                </span>
+                
+                <!-- حالة التحميل (أثناء جلب الصورة) -->
+                <span wire:loading wire:target="downloadQRCode" class="flex items-center gap-2">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    جاري التحميل...
+                </span>
+            </button>
+        </div>
+    </div>
 </div>
