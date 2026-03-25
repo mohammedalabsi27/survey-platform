@@ -48,7 +48,7 @@
                 <!-- 💡 زر نسخ الرابط الذكي (يظهر فقط إذا كان الاستبيان منشوراً) -->
                 @if($survey->status === 'published')
                 <button x-data="{ copied: false }"
-                        @click="navigator.clipboard.writeText('{{ route('surveys.fill', $survey->id) }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                        @click="navigator.clipboard.writeText('{{ route('surveys.fill', $survey->slug) }}'); copied = true; setTimeout(() => copied = false, 2000)"
                         class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-3 rounded-xl flex items-center gap-2 transition-all duration-200 border border-indigo-200 shadow-sm"
                         title="نسخ رابط المشاركة">
                     
@@ -67,7 +67,7 @@
                 @endif
 
                 <!-- زر المعاينة -->
-                <a href="{{ route('surveys.fill', $survey->id) }}" 
+                <a href="{{ route('surveys.fill', $survey->slug) }}" 
                 target="_blank"
                 class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl flex items-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl group">
                     <i class="fas fa-eye group-hover:scale-110 transition-transform"></i>
@@ -158,7 +158,7 @@
             
             <!-- 💡 صورة الـ QR من API موثوق -->
             <div class="bg-white p-4 rounded-2xl border-2 border-dashed border-gray-200 inline-block mb-6 shadow-sm hover:shadow-md transition-shadow">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode(route('surveys.fill', $survey->id)) }}" 
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode(route('surveys.fill', $survey->slug)) }}" 
                     alt="QR Code" class="w-48 h-48 mx-auto"
                     title="امسح!">
             </div>

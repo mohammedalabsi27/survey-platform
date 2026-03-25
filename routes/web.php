@@ -53,8 +53,8 @@ Route::view('/register', 'auth.register')->middleware('guest')->name('register')
 
 // أضف ده قبل Route::get('/survey/{survey}/fill'...
 Route::middleware('throttle:10,1')->group(function () {
-    Route::get('/survey/{survey}/fill', function ($surveyId) {
-        $survey = App\Models\Survey::with('questions')->findOrFail($surveyId);
+    Route::get('/s/{slug}', function ($slug) {
+        $survey = App\Models\Survey::with('questions')->where('slug', $slug)->firstOrFail();
         return view('surveys.fill', compact('survey'));
     })->name('surveys.fill');
 });

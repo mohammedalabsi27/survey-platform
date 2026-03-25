@@ -105,6 +105,30 @@
             </a>
         </div>
 
+        <!-- 💡 الرسم البياني: أداء آخر 7 أيام -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                <i class="fas fa-chart-line text-blue-500"></i> أداء الاستبيانات (آخر 7 أيام)
+            </h2>
+            <div x-data='{
+                init() {
+                    let options = {
+                        chart: { type: "area", height: 300, fontFamily: "Tajawal, sans-serif", toolbar: { show: false } },
+                        series:[{ name: "عدد الردود", data: {{ json_encode($chartData) }} }],
+                        xaxis: { categories: {!! json_encode($chartDates) !!} },
+                        colors: ["#3b82f6"],
+                        fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [50, 100] } },
+                        dataLabels: { enabled: false },
+                        stroke: { curve: "smooth", width: 3 },
+                        tooltip: { theme: "light" }
+                    };
+                    new ApexCharts(this.$refs.mainChart, options).render();
+                }
+            }'>
+                <div x-ref="mainChart"></div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- 📋 آخر الاستبيانات -->
             <div class="bg-white rounded-xl border border-gray-200 p-6">
@@ -157,20 +181,22 @@
 
                 <div class="space-y-4">
                     @forelse($recentActivity as $activity)
-                    <div class="flex items-center gap-4 p-3 border border-gray-100 rounded-lg">
-                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm">
+                    <div class="flex items-center gap-4 p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="w-10 h-10 bg-{{ $activity['color'] }}-100 rounded-full flex items-center justify-center text-{{ $activity['color'] }}-600 text-lg shrink-0">
                             <i class="fas fa-{{ $activity['icon'] }}"></i>
                         </div>
                         <div class="flex-1">
-                            <p class="text-gray-800 text-sm">{{ $activity['message'] }}</p>
-                            <p class="text-gray-500 text-xs">{{ $activity['time'] }}</p>
+                            <p class="text-gray-800 text-sm font-semibold">{{ $activity['message'] }}</p>
+                            <p class="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                                <i class="far fa-clock"></i> {{ $activity['diff'] }}
+                            </p>
                         </div>
                     </div>
                     @empty
                     <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-chart-line text-4xl mb-3 text-gray-300"></i>
+                        <i class="fas fa-history text-4xl mb-3 text-gray-300"></i>
                         <p>لا يوجد نشاط حديث</p>
-                        <p class="text-sm mt-1">سيظهر النشاط هنا عند استخدام المنصة</p>
+                        <p class="text-sm mt-1">سيظهر النشاط هنا عند نشر الاستبيانات وتلقي الردود</p>
                     </div>
                     @endforelse
                 </div>
@@ -210,3 +236,7 @@
         @endif
     </div>    
 @endsection
+@push('scripts')
+    <!-- 💡 استدعاء مكتبة ApexCharts للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+@endpush

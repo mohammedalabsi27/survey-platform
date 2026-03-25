@@ -263,7 +263,7 @@
                العودة للمصمم
             </a>
             
-            <a href="{{ route('surveys.fill', $survey->id) }}" 
+            <a href="{{ route('surveys.fill', $$survey->slug) }}" 
                target="_blank"
                class="bg-green-500 text-white px-8 py-4 rounded-xl hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl flex items-center gap-3 font-semibold">
                <i class="fas fa-eye"></i>

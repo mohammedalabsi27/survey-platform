@@ -74,7 +74,7 @@ class SurveyBuilder extends Component
     public function downloadQRCode()
     {
         // تجهيز الرابط
-        $url = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=' . urlencode(route('surveys.fill', $this->survey->id));
+        $url = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=' . urlencode(route('surveys.fill', $this->survey->slug));
         
         // جلب الصورة باستخدام Laravel HTTP Client
         $image = \Illuminate\Support\Facades\Http::get($url)->body();

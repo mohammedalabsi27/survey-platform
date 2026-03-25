@@ -17,6 +17,8 @@
             <div class="flex items-center gap-6">
                 <!-- قائمة التنقل -->
                 @include('layouts.partials.navigation')
+
+                <livewire:layouts.notification-bell />
                 
                 <!-- قسم المستخدم -->
                 @include('layouts.partials.user-menu')

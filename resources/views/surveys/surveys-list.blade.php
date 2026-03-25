@@ -109,7 +109,7 @@
                     </a>
                     
                     <!-- معاينة -->
-                    <a href="{{ route('surveys.fill', $survey->id) }}" 
+                    <a href="{{ route('surveys.fill', $survey->slug) }}" 
                        class="flex-1 bg-green-50 hover:bg-green-100 text-green-600 p-3 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 group/btn"
                        target="_blank">
                         <i class="fas fa-eye group-hover/btn:scale-110 transition-transform"></i>

@@ -11,7 +11,7 @@
         <i class="fas fa-edit group-hover:scale-110 transition-transform"></i>
         <span class="font-semibold">العودة للمصمم</span>
     </a>
-    <a href="{{ route('surveys.fill', $survey->id) }}" 
+    <a href="{{ route('surveys.fill', $survey->slug) }}" 
        target="_blank"
        class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl flex items-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl group">
         <i class="fas fa-eye group-hover:scale-110 transition-transform"></i>

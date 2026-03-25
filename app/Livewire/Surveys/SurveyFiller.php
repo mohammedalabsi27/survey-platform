@@ -74,8 +74,9 @@ class SurveyFiller extends Component
     // دالة إرسال الاستبيان
     public function submitSurvey()
     {
-        if ($this->survey->status !== 'published') {
-            session()->flash('error', 'عذراً، هذا الاستبيان مغلق حالياً ولا يستقبل ردوداً.');
+        if ($this->survey->status !== 'published' || 
+           ($this->survey->end_date && now()->gt($this->survey->end_date))) {
+            session()->flash('error', 'عذراً، تم إغلاق الاستبيان ولا يمكن استقبال ردك الآن.');
             return;
         }
         // بناء قواعد التحقق ديناميكياً
@@ -136,6 +137,9 @@ class SurveyFiller extends Component
                 }
             }
         }
+
+        $this->survey->user->notify(new \App\Notifications\NewSurveyResponse($this->survey, $response->id));
+
         Cookie::queue('survey_submitted_' . $this->survey->id, true, 60 * 24 * 365);
 
         $this->isSubmitted = true;

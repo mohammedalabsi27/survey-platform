@@ -66,6 +66,27 @@
             </div>
         </button>
         @endforeach
+        <hr class="my-4 border-gray-200"> <!-- خط فاصل للشكل الجمالي -->
+        
+        <button wire:click="addQuestion('page_break')"
+                wire:loading.attr="disabled"
+                class="w-full bg-gray-50 hover:bg-gray-100 border-2 border-gray-300 border-dashed text-gray-700 p-4 rounded-xl transition-all duration-200 group text-right flex items-center gap-3 hover:scale-105 disabled:opacity-50">
+            
+            <div class="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center text-white">
+                <i class="fas fa-pager"></i>
+            </div>
+            
+            <div class="flex-1">
+                <div class="font-semibold text-gray-800">فاصل صفحات</div>
+                <div class="text-xs text-gray-500">
+                    تقسيم الاستبيان إلى صفحات متتالية
+                </div>
+            </div>
+            
+            <div wire:loading wire:target="addQuestion('page_break')">
+                <i class="fas fa-spinner fa-spin text-gray-500"></i>
+            </div>
+        </button>
     </div>
 
     <!-- نصائح سريعة -->
